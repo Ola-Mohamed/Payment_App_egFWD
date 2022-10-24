@@ -28,7 +28,6 @@ I implement the SALE transaction only by simulating the card, terminal(ATM), and
 ==============================================================================
 
 ### I used : Microsoft Visual Studio 2022
-==============================================================================
 
 
 
