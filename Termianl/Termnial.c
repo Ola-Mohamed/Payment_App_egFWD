@@ -10,9 +10,6 @@
  *
  *******************************************************************************/
 #include   "Termnial.h"
-#include	<stdio.h>
-#include    <string.h>
-#include    <stdlib.h>
 
  /*******************************************************************************
   *                      Functions                                              *
@@ -27,15 +24,18 @@
    * [Args in]       : ST_terminalData_t *termData
    * [Args out]      : WRONG_DATE OR TERMINAL_OK
    *******************************************************************************/
+
 EN_terminalError_t getTransactionDate(ST_terminalData_t* termData) {
-		printf("Please Enter The Transaction Date as DD/MM/YYYY : ");
-		gets(termData->transactionDate);
-		if (strlen(termData->transactionDate) != 10 || (termData->transactionDate)[2] != '/' || (termData->transactionDate)[5] != '/')
-		{
-			return WRONG_DATE;
-		}
-		return TERMINAL_OK;
+
+    printf("Please Enter The Transaction Date as DD/MM/YYYY : ");
+	scanf_s("%s", termData->transactionDate, 12);
+	if (strlen(termData->transactionDate) != 10 || (termData->transactionDate)[2] != '/' || (termData->transactionDate)[5] != '/')
+	{
+		printf("Wrong TransactionDate. \n");
+		return WRONG_DATE;
 	}
+	return TERMINAL_OK;
+}
 /*******************************************************************************
  * [Function Name] : isCardExpired
  *
@@ -84,6 +84,7 @@ EN_terminalError_t isCardExpired(ST_cardData_t cardData, ST_terminalData_t termD
 	}
 	else
 	{
+		printf("\nExpired Card");
 		return EXPIRED_CARD;
 	}
 }
@@ -98,23 +99,15 @@ EN_terminalError_t isCardExpired(ST_cardData_t cardData, ST_terminalData_t termD
  *******************************************************************************/
 EN_terminalError_t getTransactionAmount(ST_terminalData_t* termData) {
 
-	{
-		float transactionAmount;
+		printf("Enter the transaction amount : ");
+		scanf_s("%f", &(termData->transAmount));
 
-
-		printf("Enter transaction amount :");
-		scanf_s("%f", &transactionAmount);
-		if (transactionAmount <= 0)
-		{
+		if (termData->transAmount <= 0) {
+			printf("Invalid Amount of Transaction. \n");
 			return INVALID_AMOUNT;
 		}
-		else
-		{
-			termData->transAmount = transactionAmount;
-
-		}
+		printf("Okay\n");
 		return TERMINAL_OK;
-	}
 }
 /*******************************************************************************
  * [Function Name] : isBelowMaxAmount
@@ -125,16 +118,15 @@ EN_terminalError_t getTransactionAmount(ST_terminalData_t* termData) {
  * [Args in]       : ST_terminalData_t *termData
  * [Args out]      : EXCEED_MAX_AMOUNT OR TERMINAL_OK
  *******************************************************************************/
-EN_terminalError_t isBelowMaxAmount(ST_terminalData_t* termData) {
-
+EN_terminalError_t isBelowMaxAmount(ST_terminalData_t* termData){
 	if (termData->transAmount > termData->maxTransAmount)
 	{
-		//printf("Maximum amount exceeded\n");
+		//7
+		printf("\nCannot make transaction becouse balance is low");
 		return EXCEED_MAX_AMOUNT;
 	}
-
+	printf("\nYou can make a transaction");
 	return TERMINAL_OK;
-
 }
 /*******************************************************************************
  * [Function Name] : setMaxAmount
@@ -144,14 +136,14 @@ EN_terminalError_t isBelowMaxAmount(ST_terminalData_t* termData) {
  * [Args in]       : ST_terminalData_t *termData , float maxAmount
  * [Args out]      : INVALID_MAX_AMOUNT OR TERMINAL_OK
  *******************************************************************************/
-EN_terminalError_t setMaxAmount(ST_terminalData_t* termData, float max) {
-
-	if (max <= 0)
+EN_terminalError_t setMaxAmount(ST_terminalData_t* termData){
+	printf("Enter the transaction max amount : ");
+	scanf_s("%f", &(termData->maxTransAmount));
+	if (termData->maxTransAmount <= 0)
 	{
+		printf("Invalid Max Amount of Transaction. \n");
 		return INVALID_MAX_AMOUNT;
 	}
-
-	termData->maxTransAmount = max;
 	return TERMINAL_OK;
 }
 
@@ -161,6 +153,7 @@ void getTransactionDateTest(void)
 	ST_terminalData_t termData;
 	getTransactionDate(&termData);
 	printf("%s", termData.transactionDate);
+	printf("\n");
 }
 
 void isCardExpriedTest(void)
@@ -188,7 +181,7 @@ void isCardExpriedTest(void)
 void getTransactionAmountTest(void)
 {
 	ST_terminalData_t termData;
-	
+
 	printf("Tester Name: Ola Mohamed \n");
 	printf("Function Name: getTransactionAmount\n");
 	printf("Test Case 1: -ve value \n");
@@ -208,8 +201,8 @@ void getTransactionAmountTest(void)
 void isBelowMaxAmountTest(void)
 {
 	ST_terminalData_t termData;
-	//setting terminal max amount 2500
-	termData.maxTransAmount = 2500.0;
+	//setting terminal max amount 
+	termData.maxTransAmount = 1500.0;
 
 	printf("Tester Name: Ola Mohamed \n");
 	printf("Function Name: isBelowMaxAmount\n");
@@ -218,7 +211,7 @@ void isBelowMaxAmountTest(void)
 	termData.transAmount = 1650;
 	printf("Expected Result:5  (EXCEED_MAX_AMOUNT) \n");
 	printf("Actual Result: %d \n", isBelowMaxAmount(&termData));
-	
+
 	printf("Tester Name: Ola Mohamed \n");
 	printf("Function Name: isBelowMaxAmount\n");
 	printf("Test Case 2: less than max amount (<1500)\n");
@@ -226,7 +219,7 @@ void isBelowMaxAmountTest(void)
 	termData.transAmount = 1250;
 	printf("Expected Result:0  (TERMINAL_OK) \n");
 	printf("Actual Result: %d \n", isBelowMaxAmount(&termData));
-	
+
 	printf("Tester Name: Ola Mohamed \n");
 	printf("Function Name: isBelowMaxAmount\n");
 	printf("Test Case 3: equal to max amount (=1500)\n");
@@ -242,27 +235,27 @@ void setMaxAmountTest(void)
 
 	ST_terminalData_t termData;
 
-	
+
 	printf("Tester Name: Ola Mohamed \n");
 	printf("Function Name: setMaxAmount\n");
 	printf("Test Case 1: -ve number (-150)\n");
 	printf("Input Data: -150 \n");
 	printf("Expected Result: 6  (INVALID_MAX_AMOUNT) \n");
 	printf("Actual Result: %d \n", setMaxAmount(&termData,1500));
-	
+	printf(" \n");
 	printf("Tester Name: Ola Mohamed \n");
 	printf("Function Name: setMaxAmount\n");
 	printf("Test Case 2: zero (0)\n");
 	printf("Input Data: 0 \n");
 	printf("Expected Result: 6  (INVALID_MAX_AMOUNT) \n");
 	printf("Actual Result: %d \n", setMaxAmount(&termData,1500));
-	
+	printf(" \n");
 	printf("Tester Name:Ola Mohamed \n");
 	printf("Function Name: setMaxAmount\n");
 	printf("Test Case 3: +ve number  (2300)\n");
 	printf("Input Data: 2300 \n");
 	printf("Expected Result: 0  (TERMINAL_OK) \n");
 	printf("Actual Result: %d \n", setMaxAmount(&termData,1500));
-	
+	printf(" \n");
 
 }

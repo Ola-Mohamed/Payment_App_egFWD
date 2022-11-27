@@ -13,8 +13,11 @@
 #ifndef TERMINAL_H_INCLUDED
 #define TERMINAL_H_INCLUDED
 
-#include"Types.h"
-#include"card.h"
+#include	"Types.h"
+#include	"../Card/card.h"
+#include	<stdio.h>
+#include    <string.h>
+#include    <stdlib.h>
 
  /*******************************************************************************
   *                      Typedef                                              *
@@ -41,7 +44,7 @@ EN_terminalError_t isCardExpired(ST_cardData_t cardData, ST_terminalData_t termD
 /*EN_terminalError_t isValidCardPAN(ST_cardData_t* cardData);*/
 EN_terminalError_t getTransactionAmount(ST_terminalData_t* termData);
 EN_terminalError_t isBelowMaxAmount(ST_terminalData_t* termData);
-EN_terminalError_t setMaxAmount(ST_terminalData_t* termData, float max);
+EN_terminalError_t setMaxAmount(ST_terminalData_t* termData);
 
 
 void getTransactionDateTest(void);
