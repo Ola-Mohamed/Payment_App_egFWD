@@ -12,7 +12,9 @@
 #ifndef APP_H_INCLUDED
 #define APP_H_INCLUDED
 
-
+#include "../Server/server.h"
+#include "../Card/card.h"
+#include "../Termnial/Termnial.h"
  /*******************************************************************************
   *                       Functions Prototypes                                    *
   *******************************************************************************/

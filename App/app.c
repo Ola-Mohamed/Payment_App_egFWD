@@ -9,9 +9,7 @@
  * Author: Ola Mohamed
  *
  *******************************************************************************/
-
-#include "App.h"
-#include "server.h"
+#include "app.h"
  /*******************************************************************************
    *                      Global Variables                                        *
   *******************************************************************************/
@@ -37,74 +35,29 @@ extern uint8_t savedtrans;
   *******************************************************************************/
 void appstart(void)
 {
-	while (getCardHolderName(&card) == WRONG_NAME)
-	{
-		printf("Unvalid name, Try again \n");
-	}
-	printf("**valid Name**\n");
 
-	while (getCardExpiryDate(&card) == WRONG_EXP_DATE)
-	{
-		printf("Unvalid expiry date, Try again \n");
-	}
-	printf("**valid Expiration Date**\n");
+	getCardHolderName(&card);
+	getCardExpiryDate(&card);
+	getCardPAN(&card);
 
-	while (getCardPAN(&card) == WRONG_PAN)
-	{
-		printf("Unvalid PAN, Try again \n");
-	}
-	printf("**valid Card PAN Format **\n");
+	getTransactionDate(&term);
+	isCardExpired(card, term);
+	setMaxAmount(&term);
+	getTransactionAmount(&term);
 
-	trans.cardHolderData = card;
+	isBelowMaxAmount(&term);
 
-	if (getTransactionDate(&term) != TERMINAL_OK) {
-		printf("Wrong Transaction Date format\n");
-		return;
-	}
-	else {
-		printf("**valid Transaction Date**\n");
-	}
-
-	if (isCardExpired(card, term) != TERMINAL_OK) {
-		printf("expired card\n");
-		return;
-	}
-	else {
-		printf("**valid card Exp Date**\n");
-	}
-
-	if (setMaxAmount(&term, 2500) != TERMINAL_OK) {
-		printf("Invalid Maximum Transaction Amount!!\n");
-		return;
-	}
-	else {
-		printf("MAX amount is set\n");
-	}
-
-	if (getTransactionAmount(&term) != TERMINAL_OK) {
-		printf("Invalid_Amount!!\n");
-		return;
-	}
+	trans.cardHolderData = card; // UPDATE CARD_HOLDER_DATA
 	trans.terminalData = term;
+	saveTransaction(&trans);
 
-	if (isBelowMaxAmount(&term) != TERMINAL_OK) {
-		printf("You have exceeded the Maximum Transaction Amount!!");
-		return;
-	}
-	else {
-		
-	//	printf("transaction accepted\n");
-		printf("Transaction Not received!!\n");
+	//getTransaction(transData_1.transactionSequenceNumber, &transData_1);
+
+	recieveTransactionData(&trans);
+
+	getTransaction(1, &trans);
 	
-	}
+	savedtrans++;
 
-	if (recieveTransactionData(&trans.cardHolderData) != SERVER_OK) {
-		printf("Transaction Not received!!\n");
-		return;
-	}
-	else {
-		printf("Transaction received\n");
-		savedtrans++;
-	}
 }
 
