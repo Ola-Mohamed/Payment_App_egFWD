@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include "app.h"
-#include "server.h"
 #include "Types.h"
 
 int main(void) {
