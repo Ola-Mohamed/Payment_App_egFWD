@@ -12,7 +12,10 @@
 #ifndef CARD_H_INCLUDED
 #define CARD_H_INCLUDED
 
-#include"Types.h"
+#include	"Types.h"
+#include	<stdio.h>
+#include    <string.h>
+#include	<stdlib.h>
 
  /*******************************************************************************
   *                      Typedef                                              *
