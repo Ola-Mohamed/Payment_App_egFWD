@@ -12,15 +12,18 @@
 
 #ifndef SERVER_H_INCLUDED
 #define SERVER_H_INCLUDED
-#include "Types.h"
-#include "Termnial.h"
+#include    "../Termnial/Termnial.h"
+#include    "card.h"
+#include	<stdio.h>
+#include    <string.h>
+#include    <stdlib.h>
 
  /*******************************************************************************
   *                      Typedef                                              *
   *******************************************************************************/
 typedef enum EN_transState_t
 {
-    APPROVED, DECLINED_INSUFFECIENT_FUND, DECLINED_STOLEN_CARD, FRAUD_CARD, INTERNAL_SERVER_ERROR
+     APPROVED, DECLINED_INSUFFECIENT_FUND, DECLINED_STOLEN_CARD, FRAUD_CARD, INTERNAL_SERVER_ERROR
 }EN_transStat_t;
 
 typedef struct ST_transaction_t
@@ -58,8 +61,12 @@ EN_serverError_t isValidAccount(ST_cardData_t* cardData, ST_accountsDB_t* accoun
 EN_serverError_t isBlockedAccount(ST_accountsDB_t* accountRefrence);
 EN_serverError_t isAmountAvailable(ST_terminalData_t* termData, ST_accountsDB_t* accountRefrence);
 EN_serverError_t saveTransaction(ST_transaction_t* transData);
-void listSavedTransactions(void);
 
+//7
+EN_serverError_t getTransaction(uint32_t transactionSequenceNumber, ST_transaction_t* transData);
+
+
+void listSavedTransactions(void);
 void recieveTransactionDataTest(void);
 void isValidAccountTest(void);
 void isBlockedAccountTest(void);

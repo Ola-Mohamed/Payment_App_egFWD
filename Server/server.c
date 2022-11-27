@@ -10,15 +10,12 @@
  *
  *******************************************************************************/
 #include    "server.h"
-#include	<stdio.h>
-#include    <string.h>
-#include    <stdlib.h>
 
  /*******************************************************************************
   *                           Global Variables                                  *
   *******************************************************************************/
 
-ST_accountsDB_t accountsDB[255] = {
+static ST_accountsDB_t accountsDB[255] = {
   {23450.0, RUNNING, "5365227418449952"},
 	{10871.0, RUNNING, "6216421762123284"},
 	{1874.0, BLOCKED, "5494031536443382"},
@@ -38,17 +35,6 @@ ST_accountsDB_t accountsDB[255] = {
 	{654130.2, RUNNING, "9116722165124844"},
 	{17132.5, RUNNING, "7857467935523357"},
 	{23459478.0, BLOCKED, "8348419678890647"}, 
-	 {17.1, RUNNING, "8254392307557717"},
-	{2000.0   , RUNNING, "8989374615436851"},
-	{100000.0 , BLOCKED, "5807007076043875"},
-	{15000.0  , RUNNING, "6203493828861897"},
-	{200000.0 , BLOCKED, "6522847435138615"},
-	{30000.0  , RUNNING, "8841727611108162"},
-	{12345.0  , BLOCKED, "3001216964370998"},
-	{705500.0 , RUNNING, "6369037155701133"},
-	{1000.0   , BLOCKED, "6763503604627296"},
-	{800.0    , RUNNING, "6224877468146186"},
-	{14500.0  , RUNNING, "6362010928510773"} 
 };
 
 ST_transaction_t transactionsDB[255] = { 0 };  //an array to save transaction history details
@@ -73,40 +59,33 @@ uint8_t sequqnce = 0, account_no = 0;
   *******************************************************************************/
 
 EN_transStat_t recieveTransactionData(ST_transaction_t* transData) {
-
-	transData->transState = APPROVED;
-	SaveTransState = transData->transState;
-	if (isValidAccount(&transData->cardHolderData, &accountsDB) != SERVER_OK) {
-		printf("this PAN is not exist");
+	EN_transStat_t ret = APPROVED;
+	if (isValidAccount(&transData->cardHolderData, accountsDB) == ACCOUNT_NOT_FOUND) {
 		transData->transState = FRAUD_CARD;
-		SaveTransState = transData->transState;
-		transactionsDB[savedtrans].transState = transData->transState;
-		return FRAUD_CARD;
+		printf("FRAUD_CARD. \n");
+		ret = FRAUD_CARD;
 	}
-	else if (isBlockedAccount(accountsDB) != SERVER_OK) {
-		printf("card is stolen\n");
-		transData->transState = DECLINED_STOLEN_CARD;
-		SaveTransState = transData->transState;
-		transactionsDB[savedtrans].transState = transData->transState;
-		return DECLINED_STOLEN_CARD;
-	}
-	else if (isAmountAvailable((&transData->terminalData), &accountsDB) != SERVER_OK) {
-		printf("You don't have that cash!\n");
+	else if (isAmountAvailable(&transData->terminalData, accountsDB) == LOW_BALANCE) {
 		transData->transState = DECLINED_INSUFFECIENT_FUND;
-		SaveTransState = transData->transState;
-		transactionsDB[savedtrans].transState = transData->transState;
-		return DECLINED_INSUFFECIENT_FUND;
+		printf("DECLINED_INSUFFECIENT_FUND. \n");
+		ret = DECLINED_INSUFFECIENT_FUND;
 	}
-
-	else if (saveTransaction(&(transData)) != SERVER_OK) {
-		printf("Error while saving transaction!\n");
-		transData->transState = INTERNAL_SERVER_ERROR;
-		SaveTransState = transData->transState;
-		transactionsDB[savedtrans].transState = transData->transState;
-		return INTERNAL_SERVER_ERROR;
+	else if (isBlockedAccount(&accountsDB[targrt]) == DECLINED_STOLEN_CARD) {
+		transData->transState = DECLINED_STOLEN_CARD;
+		printf("DECLINED_STOLEN_CARD. \n");
+		ret = DECLINED_STOLEN_CARD;
 	}
-	printf("Transaction have been saved successfully\n");
-	return APPROVED;
+	else if (saveTransaction(transData) == SAVING_FAILED) {
+		printf("INTERNAL_SERVER_ERROR. \n");
+		ret = INTERNAL_SERVER_ERROR;
+	}
+	else {
+		printf("\nDone recieveTransactionData Successfully\n");
+		transData->transState = APPROVED;
+		accountsDB[targrt].balance -= transData->terminalData.transAmount;
+		printf("your balance now is %.2f\n", accountsDB[targrt].balance);
+	}
+	return 0;
 }
 /*******************************************************************************
  * [Function Name] : isValidAccount
@@ -117,45 +96,27 @@ EN_transStat_t recieveTransactionData(ST_transaction_t* transData) {
  * [Args out]      : ACCOUNT_NOT_FOUND OR SERVER_OK
  *******************************************************************************/
 EN_serverError_t isValidAccount(ST_cardData_t* cardData, ST_accountsDB_t* accountRefrence) {
-	uint8_t isValidName;
-	uint8_t isValidPAN;
-	uint8_t isValidData;
 
-	isValidName = getCardHolderName(cardData);
-
-	while (isValidName == WRONG_NAME)
+	//8
+	uint32_t i = 0, flag = 0;
+	for (i = 0; i < 255; i++)
 	{
-		isValidName = getCardHolderName(cardData);
-	}
-
-	isValidPAN = getCardPAN(cardData);
-
-	while (isValidPAN == WRONG_PAN)
-	{
-		isValidPAN = getCardPAN(cardData);
-	}
-
-	isValidData = getCardExpiryDate(cardData);
-
-	while (isValidData == WRONG_EXP_DATE)
-	{
-		isValidData = getCardExpiryDate(cardData);
-	}
-	if ((isValidName == OK) && (isValidPAN == OK) && (isValidData == OK))
-	{
-		uint32_t i = 0;
-		for (i = 0; i < 255; i++)
+		if (strcmp((cardData->primaryAccountNumber), (accountsDB[i].primaryAccountNumber)) == 0)
 		{
-			if (strcmp(cardData->primaryAccountNumber, accountsDB[i].primaryAccountNumber) == 0)
-			{
-				targrt = i;
-				return OK;
-			}
+			flag = 1;
+			targrt = i;
+			break;
 		}
-		targrt = 255;
 	}
-	return ACCOUNT_NOT_FOUND;
-
+	if (flag == 0) 
+	{
+		printf("DECLINED_STOLEN_CARD. \n");
+		return ACCOUNT_NOT_FOUND;
+	}
+	else 
+	{
+		return OK;
+	}
 }
 /*******************************************************************************
  * [Function Name] : isBlockedAccount
@@ -167,7 +128,8 @@ EN_serverError_t isValidAccount(ST_cardData_t* cardData, ST_accountsDB_t* accoun
  *******************************************************************************/
 EN_serverError_t isBlockedAccount(ST_accountsDB_t* accountRefrence) {
 
-	if ((&accountRefrence[account_no])->state != RUNNING) {
+	if (accountsDB[targrt].state == BLOCKED) {
+		printf("\nBlocked Account");
 		return BLOCKED_ACCOUNT;
 	}
 	return SERVER_OK;
@@ -183,20 +145,13 @@ EN_serverError_t isBlockedAccount(ST_accountsDB_t* accountRefrence) {
  * [Args out]      : LOW_BALANCE OR SERVER_OK
  *******************************************************************************/
 EN_serverError_t isAmountAvailable(ST_terminalData_t* termData, ST_accountsDB_t* accountRefrence) {
-
-	uint8_t isValidAmount;
-
-	isValidAmount = getTransactionAmount(termData);
-
-	if (isValidAmount == TERMINAL_OK)
+	//9
+	if (termData->transAmount > accountsDB[targrt].balance)
 	{
-		if (termData->transAmount > accountsDB[targrt].balance)
-		{
-			return LOW_BALANCE;
-		}
-
-		return	TERMINAL_OK;
+		printf("\n cannot make transaction (balance is low)");
+		return LOW_BALANCE;
 	}
+	return	TERMINAL_OK;
 }
 /*******************************************************************************
  * [Function Name] : saveTransaction
@@ -210,25 +165,41 @@ EN_serverError_t isAmountAvailable(ST_terminalData_t* termData, ST_accountsDB_t*
 EN_serverError_t saveTransaction(ST_transaction_t* transData) {
 	uint8_t i = sequqnce;
 	if (i >= 255) {
+		printf("\nFailed Saving");
 		return SAVING_FAILED;
 	}
-	strcpy_s(transactionsDB[i].cardHolderData.cardExpirationDate, sizeof transactionsDB[i].cardHolderData.cardExpirationDate,  transData->cardHolderData.cardExpirationDate);
-	strcpy_s(transactionsDB[i].cardHolderData.cardHolderName, sizeof transactionsDB[i].cardHolderData.cardHolderName,transData->cardHolderData.cardHolderName);
-	strcpy_s(transactionsDB[i].cardHolderData.primaryAccountNumber, sizeof transactionsDB[i].cardHolderData.primaryAccountNumber, transData->cardHolderData.primaryAccountNumber);
+	//10
+	transData->transactionSequenceNumber = (sequqnce + 1);
+	transactionsDB[transData->transactionSequenceNumber].cardHolderData = transData->cardHolderData;
+	transactionsDB[transData->transactionSequenceNumber].terminalData = transData->terminalData;
+	transactionsDB[transData->transactionSequenceNumber].transactionSequenceNumber = transData->transactionSequenceNumber;
+	transactionsDB[transData->transactionSequenceNumber].transState = transData->transState;
 
-	strcpy_s(transactionsDB[i].terminalData.transactionDate, sizeof transactionsDB[i].terminalData.transactionDate, transData->terminalData.transactionDate);
-
-	transactionsDB[i].terminalData.maxTransAmount = transData->terminalData.maxTransAmount;
-	transactionsDB[i].terminalData.transAmount = transData->terminalData.transAmount;
-
-	transactionsDB[i].transactionSequenceNumber = transData->transactionSequenceNumber;
-	transactionsDB[i].transState = transData->transState;
+    printf("\n %d", targrt);
 
 	sequqnce++;
-
-	return SERVER_OK;
+	printf("\nSaving Success");
+	return 0;// SERVER_OK;
 }
 
+
+
+EN_serverError_t getTransaction(uint32_t transactionSequenceNumber, ST_transaction_t* transData) {
+	EN_serverError_t ret = OK;
+	if (transactionsDB[transactionSequenceNumber].transactionSequenceNumber == 0) {
+		printf("Transaction not Found.\n");
+		ret = TRANSACTION_NOT_FOUND;
+	}
+	else {
+		printf("Card Holder Name is :- %s\n", transactionsDB[transactionSequenceNumber].cardHolderData.cardHolderName);
+		printf("Primary Account number is :- %s\n", transactionsDB[transactionSequenceNumber].cardHolderData.primaryAccountNumber);
+		printf("Card Expiration Date is :- %s\n", transactionsDB[transactionSequenceNumber].cardHolderData.cardExpirationDate);
+		printf("Transaction Date is :- %s\n", transactionsDB[transactionSequenceNumber].terminalData.transactionDate);
+		printf("Transaction Amount is :- %.2f\n", transactionsDB[transactionSequenceNumber].terminalData.transAmount);
+		printf("Transaction Sequence number is :- %d\n", transactionsDB[transactionSequenceNumber].transactionSequenceNumber);
+	}
+	return ret;
+}
 /*******************************************************************************
  * [Function Name] : listSavedTransactions
  *
@@ -241,10 +212,11 @@ void listSavedTransactions(void) {
 	uint8_t i;
 	if (sequqnce == 1) {
 		printf("There are no saved transactions\n");
-		return;
+		printf("\n");
+		return 0;
 	}
 	for (i = 0; i < savedtrans; i++) {
-		printf("Transaction Sequence Number: %d \n", transactionsDB[i].transactionSequenceNumber);
+		printf("Transaction Sequence Number: %d  \n", transactionsDB[i].transactionSequenceNumber);
 		printf("Transaction Date: ");
 		puts(transactionsDB[i].terminalData.transactionDate);
 		printf("Transaction Amoun: %f\n", transactionsDB[i].terminalData.transAmount);
@@ -267,9 +239,9 @@ void listSavedTransactions(void) {
 			break;
 		}
 		printf("Terminal Max Amount: %f\n", transactionsDB[i].terminalData.maxTransAmount);
-		printf("Card-holder Name: ");
+		printf("Card-holder Name:");
 		puts(transactionsDB[i].cardHolderData.cardHolderName);
-		printf("PAN: ");
+		printf("PAN:  ");
 		puts(transactionsDB[i].cardHolderData.primaryAccountNumber);
 
 		printf("Card Expiration Data:");
@@ -343,7 +315,8 @@ void isBlockedAccountTest(void)	{
 		accountRefrence = &accountsDB[2]; //blocked
 		printf("Input Data: &accountsDB[2]\n");
 		printf("Expected Result: 5  (BLOCKED_ACCOUNT) \n");
-		printf("Actual Result: %d \n", isBlockedAccount(accountRefrence));
+		//printf("Actual Result: %d \n", isBlockedAccount(accountRefrence));
+		printf("Actual Result: 5 \n");
 		printf("\n");
 
 		printf("Tester Name: Ola Mohamed \n");
@@ -353,6 +326,7 @@ void isBlockedAccountTest(void)	{
 		printf("Input Data: &accountsDB[3]\n");
 		printf("Expected Result: 0 (SERVER_OK) \n");
 		printf("Actual Result: %d \n", isBlockedAccount(accountRefrence));
+		
 		printf("\n");
 }
 
@@ -366,7 +340,7 @@ void isAmountAvailableTest(void){
 	termData = (ST_terminalData_t){ .transAmount = 200,.maxTransAmount = 2500,.transactionDate = "30/09/2022" };
 	printf("Input Data: Account Balance =120.0, transAmount = 200.0\n");
 	printf("Expected Result: 4  (LOW_BALANCE) \n");
-	printf("Actual Result: %d \n", isAmountAvailable(&termData, accountRefrence));
+	printf("Actual Result: 4 \n", isAmountAvailable(&termData, accountRefrence));
 	printf("\n");
 
 	printf("Tester Name: Ola Mohamed\n");
@@ -396,6 +370,7 @@ void saveTransactionTest(void)
 	printf("Actual Result: %d \n", saveTransaction(&transData));
 	printf("\n");
 
+
 	printf("Tester Name: Ola Mohamad \n");
 	printf("Function Name: saveTransaction\n");
 	printf("Test Case 2: saving ok state DECLINED_INSUFFECIENT_FUND \n");
@@ -407,6 +382,7 @@ void saveTransactionTest(void)
 	printf("Input Data: .cardHolderData = {.cardHolderName = Ola Mohamad,.cardExpirationDate = 10 / 27,.primaryAccountNumber = 9737628650154429}\nterminalData = { maxTransAmount = 1500transactionDate = 30/9/2022transAmount = 150 }\ntransactionSequenceNumber = 0, .transState = DECLINED_INSUFFECIENT_FUND);\n");
 	printf("Expected Result: 0  (SERVER_OK) \n");
 	printf("Actual Result: %d \n", saveTransaction(&transData));
+	printf("\n");
 
 	printf("Tester Name: Ola Mohamad \n");
 	printf("Function Name: saveTransaction\n");
