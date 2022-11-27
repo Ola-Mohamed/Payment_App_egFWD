@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include "app.h"
-#include "Types.h"
 
 int main(void) {
 	static char ch[1] = "1";
@@ -24,4 +23,5 @@ int main(void) {
 			break;
 		}
 	}
+
 }
